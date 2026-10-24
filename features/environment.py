@@ -1,6 +1,7 @@
 from playwright.sync_api import sync_playwright
 
-BASE_URL = "https://ecommerce-playground.lambdatest.io/"
+BASE_URL = "https://opencart.abstracta.us/"
+BASE_URL_OLD = "https://ecommerce-playground.lambdatest.io/"
 
 def before_all(context):
     context.base_url = BASE_URL
