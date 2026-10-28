@@ -1,34 +1,14 @@
 import re
 from decimal import Decimal
 
-# ---- Selectors: the only place to edit if the site markup differs ----------
-QUANTITY_INPUT = "input[name='quantity']"                 # product page
-ADD_TO_CART_BUTTON = "#button-cart"                       # product page
-CART_ROWS = "#content form table tbody tr"                # one row per product
-ROW_QUANTITY = "input[name^='quantity']"
-ROW_UPDATE = "button[data-original-title='Update'], button[title='Update'], button[aria-label='Update']"
-ROW_REMOVE = "button[data-original-title='Remove'], button[title='Remove'], a[title='Remove'], button[aria-label='Remove']"
-TOTALS_ROWS = "#content table tr"
-# -----------------------------------------------------------------------------
+from pages.util import money
 
-CART_PATH = "index.php?route=checkout/cart"
-PRODUCT_PATH = "index.php?route=product/product&product_id={id}"
-
-# Product ids read from the live home page
-PRODUCT_IDS = {
-    "iPhone": 40,
-    "Canon EOS 5D": 30,
-    "Nikon D300": 31,
-    "iPod Shuffle": 34,
-    "HTC Touch HD": 28,
-}
-
-MONEY = re.compile(r"\$([\d,]+\.\d{2})")
-
-
-def amounts(text):
-    """All dollar amounts in a piece of text, as Decimals."""
-    return [Decimal(m.replace(",", "")) for m in MONEY.findall(text)]
+# ---- Selectors ----------------------------------------------------------------
+NAV_CART = "#cartur"
+ROWS = "#tbodyid tr.success"
+TOTAL = "#totalp"
+PLACE_ORDER = "button"          # matched by its visible text below
+# -------------------------------------------------------------------------------
 
 
 class CartPage:
@@ -36,73 +16,60 @@ class CartPage:
         self.page = page
         self.base_url = base_url
 
-    # ---- navigation ---------------------------------------------------------
+    def _settle(self):
+        self.page.wait_for_load_state("load")
+        self.page.wait_for_load_state("networkidle")
+
     def open(self):
-        self.page.goto(self.base_url + CART_PATH)
-        self.page.wait_for_load_state("domcontentloaded")
+        # Use the nav link, as a shopper would, so the site's cart cookie is in place
+        self.page.locator(NAV_CART).click()
+        self.page.wait_for_url(re.compile(r"cart\.html"))
+        self._settle()
 
     def reload(self):
         self.page.reload()
-        self.page.wait_for_load_state("domcontentloaded")
-
-    def proceed_to_checkout(self):
-        self.page.locator("#content").get_by_role("link", name="Checkout").first.click()
-        self.page.wait_for_load_state("domcontentloaded")
-
-    # ---- actions ------------------------------------------------------------
-    def add_product(self, name, quantity=1):
-        if name not in PRODUCT_IDS:
-            raise ValueError(f"Unknown product '{name}'. Add its id to PRODUCT_IDS.")
-        self.page.goto(self.base_url + PRODUCT_PATH.format(id=PRODUCT_IDS[name]))
-        self.page.fill(QUANTITY_INPUT, str(quantity))
-        with self.page.expect_response(
-            lambda r: r.request.method == "POST" and "cart" in r.url and "add" in r.url
-        ) as resp:
-            self.page.click(ADD_TO_CART_BUTTON)
-        assert resp.value.ok, f"Add to cart failed with HTTP {resp.value.status}"
-
-    def update_quantity(self, name, quantity):
-        row = self._row(name)
-        row.locator(ROW_QUANTITY).fill(str(quantity))
-        row.locator(ROW_UPDATE).first.click()
-        self.page.wait_for_load_state("networkidle")
-
-    def remove(self, name):
-        self._row(name).locator(ROW_REMOVE).first.click()
-        self.page.wait_for_load_state("networkidle")
+        self._settle()
 
     # ---- reading state ------------------------------------------------------
-    def _row(self, name):
-        row = self.page.locator(CART_ROWS, has_text=name).first
-        row.wait_for(state="visible", timeout=10000)
-        return row
+    def count(self):
+        return self.page.locator(ROWS).count()
 
-    def is_empty_message_visible(self):
-        msg = self.page.get_by_text("Your shopping cart is empty", exact=False).first
-        msg.wait_for(state="visible", timeout=10000)
-        return msg.is_visible()
+    def items(self):
+        """[{'title': ..., 'price': Decimal}] for every row. Waits for rows to load."""
+        self.page.locator(ROWS).first.wait_for(state="visible")
+        self._settle()
+        rows = self.page.locator(ROWS)
+        out = []
+        for i in range(rows.count()):
+            cells = rows.nth(i).locator("td")
+            out.append(
+                {
+                    "title": cells.nth(1).inner_text().strip(),
+                    "price": money(cells.nth(2).inner_text()),
+                }
+            )
+        return out
 
-    def contains(self, name):
-        return self.page.locator(CART_ROWS, has_text=name).count() > 0
+    def is_empty(self):
+        self._settle()
+        return self.count() == 0
 
-    def quantity_of(self, name):
-        return int(self._row(name).locator(ROW_QUANTITY).input_value())
+    def total(self):
+        """The cart total shown on the page. Waits until it has been filled in."""
+        self.page.wait_for_function(
+            "() => { const e = document.querySelector('#totalp');"
+            " return e && e.innerText.trim() !== ''; }"
+        )
+        return money(self.page.locator(TOTAL).inner_text())
 
-    def unit_price(self, name):
-        return amounts(self._row(name).inner_text())[0]
+    # ---- actions ------------------------------------------------------------
+    def delete(self, title):
+        row = self.page.locator(ROWS, has_text=title).first
+        row.wait_for(state="visible")
+        row.locator("a", has_text="Delete").click()
+        row.wait_for(state="detached")
+        self._settle()
 
-    def line_total(self, name):
-        return amounts(self._row(name).inner_text())[-1]
-
-    def line_item_count(self):
-        self.page.locator(CART_ROWS).first.wait_for(state="visible", timeout=10000)
-        return self.page.locator(CART_ROWS).count()
-
-    def all_line_totals(self):
-        rows = self.page.locator(CART_ROWS)
-        return [amounts(rows.nth(i).inner_text())[-1] for i in range(rows.count())]
-
-    def sub_total(self):
-        row = self.page.locator(TOTALS_ROWS, has_text=re.compile(r"Sub-Total")).last
-        row.wait_for(state="visible", timeout=10000)
-        return amounts(row.inner_text())[-1]
+    def place_order(self):
+        self.page.locator(PLACE_ORDER, has_text="Place Order").click()
+        self.page.locator("#orderModal").wait_for(state="visible")

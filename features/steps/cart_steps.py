@@ -1,81 +1,62 @@
-from behave import given, when, then
-from pages.cart_page import CartPage
+from behave import step, then, when
 
 
-def cart(context):
-    if not hasattr(context, "cart"):
-        context.cart = CartPage(context.page, context.base_url)
-    return context.cart
-
-
-# ---- Given ------------------------------------------------------------------
-@given("I have an empty cart")
-def step_empty_cart(context):
-    # environment.py gives every scenario a fresh browser page, so the cart
-    # starts empty. This step verifies that precondition instead of assuming it.
-    cart(context).open()
-    assert cart(context).is_empty_message_visible(), "Cart was not empty at the start"
-
-
-# ---- When -------------------------------------------------------------------
-@when('I add "{product}" to the cart')
-def step_add(context, product):
-    cart(context).add_product(product)
-
-
-@when('I add "{product}" to the cart with quantity {qty:d}')
-def step_add_qty(context, product, qty):
-    cart(context).add_product(product, qty)
-
-
-@when("I open the cart page")
+@step("I open the cart page")
 def step_open_cart(context):
-    cart(context).open()
+    context.cart.open()
 
 
 @when("I reload the cart page")
-def step_reload_cart(context):
-    cart(context).reload()
+def step_reload(context):
+    context.cart.reload()
 
 
-@when('I update the quantity of "{product}" to {qty:d}')
-def step_update_qty(context, product, qty):
-    cart(context).update_quantity(product, qty)
+@when('I delete "{product}" from the cart')
+def step_delete(context, product):
+    context.cart.delete(product)
 
 
-@when('I remove "{product}" from the cart')
-def step_remove(context, product):
-    cart(context).remove(product)
+@then("the cart should be empty")
+def step_empty(context):
+    assert context.cart.is_empty(), f"Cart still has {context.cart.count()} line(s)"
 
 
-# ---- Then -------------------------------------------------------------------
-@then("I should see the empty cart message")
-def step_see_empty(context):
-    assert cart(context).is_empty_message_visible(), "Empty cart message not shown"
+@then('the cart should contain "{product}"')
+def step_contains(context, product):
+    titles = [i["title"] for i in context.cart.items()]
+    assert product in titles, f"'{product}' not in cart {titles}"
 
 
-@then('the cart should contain "{product}" with quantity {qty:d}')
-def step_cart_contains(context, product, qty):
-    assert cart(context).contains(product), f"'{product}' is not in the cart"
-    actual = cart(context).quantity_of(product)
-    assert actual == qty, f"Expected quantity {qty} for '{product}', found {actual}"
+@then('the cart should not contain "{product}"')
+def step_not_contains(context, product):
+    titles = [i["title"] for i in context.cart.items()]
+    assert product not in titles, f"'{product}' is still in the cart {titles}"
 
 
-@then("the cart should contain {n:d} line items")
-def step_line_items(context, n):
-    actual = cart(context).line_item_count()
-    assert actual == n, f"Expected {n} line items, found {actual}"
+@then("the number of cart lines should be {n:d}")
+def step_line_count(context, n):
+    actual = len(context.cart.items())
+    assert actual == n, f"Expected {n} cart line(s), found {actual}"
 
 
-@then('the line total for "{product}" should be {qty:d} times the unit price')
-def step_line_total(context, product, qty):
-    unit = cart(context).unit_price(product)
-    total = cart(context).line_total(product)
-    assert total == unit * qty, f"Expected {unit} x {qty} = {unit * qty}, page shows {total}"
+@then("the cart total should equal the sum of the item prices")
+def step_total_sum(context):
+    expected = sum(i["price"] for i in context.cart.items())
+    actual = context.cart.total()
+    assert actual == expected, f"Item prices add to {expected}, cart total shows {actual}"
 
 
-@then("the cart sub-total should equal the sum of the line totals")
-def step_subtotal(context):
-    expected = sum(cart(context).all_line_totals())
-    actual = cart(context).sub_total()
-    assert actual == expected, f"Line totals add to {expected}, sub-total shows {actual}"
+@then('the cart total should be twice the price of "{product}"')
+def step_total_twice(context, product):
+    expected = context.prices[product] * 2
+    actual = context.cart.total()
+    assert actual == expected, f"Expected 2 x {context.prices[product]} = {expected}, got {actual}"
+
+
+@then('the cart price for "{product}" should match its product page price')
+def step_price_match(context, product):
+    in_cart = {i["title"]: i["price"] for i in context.cart.items()}
+    assert product in in_cart, f"'{product}' not in cart {list(in_cart)}"
+    assert in_cart[product] == context.prices[product], (
+        f"Product page showed {context.prices[product]}, cart shows {in_cart[product]}"
+    )

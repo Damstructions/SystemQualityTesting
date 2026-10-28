@@ -1,74 +1,50 @@
-from behave import when, then
-from pages.cart_page import CartPage
-from pages.checkout_page import CheckoutPage
+from behave import then, when
 
 
-def checkout(context):
-    if not hasattr(context, "checkout"):
-        context.checkout = CheckoutPage(context.page, context.base_url)
-    return context.checkout
+@when("I click Place Order")
+def step_place_order(context):
+    # Remember the total shown in the cart so later steps can compare to it
+    context.cart_total = context.cart.total()
+    context.cart.place_order()
 
 
-def cart(context):
-    if not hasattr(context, "cart"):
-        context.cart = CartPage(context.page, context.base_url)
-    return context.cart
+@when("I fill in valid details on the order form")
+def step_valid(context):
+    context.checkout.fill_valid_details()
 
 
-# ---- When -------------------------------------------------------------------
-@when("I go directly to the checkout page")
-def step_direct_checkout(context):
-    checkout(context).open()
+@when("I fill in only the name on the order form")
+def step_only_name(context):
+    context.checkout.fill(name="Test Shopper")
 
 
-@when("I proceed to checkout from the cart")
-def step_proceed(context):
-    cart(context).proceed_to_checkout()
+@when("I fill in only the card number on the order form")
+def step_only_card(context):
+    context.checkout.fill(card="4111111111111111")
 
 
-@when("I choose guest checkout")
-def step_guest(context):
-    checkout(context).choose_guest()
+@when("I submit the order form")
+def step_submit(context):
+    context.checkout.submit()
 
 
-@when("I continue without entering any details")
-def step_continue_empty(context):
-    checkout(context).click_continue()
+@when("I accept the purchase confirmation")
+def step_accept(context):
+    context.checkout.confirm_ok()
 
 
-@when("I enter valid guest billing details")
-def step_billing(context):
-    checkout(context).fill_billing_details()
+@then("the order form total should equal the cart total")
+def step_modal_total(context):
+    actual = context.checkout.modal_total()
+    assert actual == context.cart_total, f"Cart total {context.cart_total}, order form shows {actual}"
 
 
-@when("I accept the terms and continue to confirmation")
-def step_terms(context):
-    checkout(context).accept_terms_and_continue()
+@then("I should see a purchase confirmation")
+def step_confirmation(context):
+    assert context.checkout.confirmation_shown(), "No 'Thank you for your purchase' confirmation"
 
 
-@when("I confirm the order")
-def step_confirm(context):
-    checkout(context).confirm_order()
-
-
-# ---- Then -------------------------------------------------------------------
-@then("I should be redirected to the cart page")
-def step_redirected(context):
-    context.page.wait_for_url("**checkout/cart**", timeout=10000)
-    assert "checkout/cart" in context.page.url
-
-
-@then("I should be on the checkout page")
-def step_on_checkout(context):
-    context.page.wait_for_url("**checkout/checkout**", timeout=10000)
-    assert "checkout/checkout" in context.page.url
-
-
-@then("I should see validation errors")
-def step_errors(context):
-    assert checkout(context).validation_errors_visible(), "No validation error was shown"
-
-
-@then("the order should be placed")
-def step_placed(context):
-    assert checkout(context).order_placed(), "Order confirmation message not shown"
+@then("the confirmation amount should equal the cart total")
+def step_amount(context):
+    actual = context.checkout.confirmation_amount()
+    assert actual == context.cart_total, f"Cart total {context.cart_total}, confirmation says {actual}"

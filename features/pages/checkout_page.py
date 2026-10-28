@@ -1,72 +1,72 @@
 import re
-import time
+from decimal import Decimal
 
-# ---- Selectors: the only place to edit if the site markup differs ----------
-VALIDATION_ERRORS = ".text-danger, .invalid-feedback, .alert-danger"
-# -----------------------------------------------------------------------------
+from playwright.sync_api import TimeoutError as PWTimeout
 
-CHECKOUT_PATH = "index.php?route=checkout/checkout"
+from pages.util import money
 
-# Fake data for a demo site. The email is unique per run.
-GUEST = {
-    "First Name": "Test",
-    "Last Name": "Shopper",
-    "Telephone": "0400000000",
-    "Address 1": "1 Test Street",
-    "City": "Sydney",
-    "Post Code": "2000",
+# ---- Selectors ----------------------------------------------------------------
+MODAL = "#orderModal"
+FIELDS = {
+    "name": "#name",
+    "country": "#country",
+    "city": "#city",
+    "card": "#card",
+    "month": "#month",
+    "year": "#year",
+}
+MODAL_TOTAL = "#totalm"
+CONFIRM_BOX = ".sweet-alert"
+# -------------------------------------------------------------------------------
+
+# Fake data for a public demo site
+VALID_DETAILS = {
+    "name": "Test Shopper",
+    "country": "Australia",
+    "city": "Sydney",
+    "card": "4111111111111111",
+    "month": "12",
+    "year": "2030",
 }
 
 
 class CheckoutPage:
-    def __init__(self, page, base_url):
+    """The 'Place Order' modal on the cart page."""
+
+    def __init__(self, page):
         self.page = page
-        self.base_url = base_url
 
-    def open(self):
-        self.page.goto(self.base_url + CHECKOUT_PATH)
-        self.page.wait_for_load_state("domcontentloaded")
+    def fill(self, **values):
+        for key, value in values.items():
+            self.page.locator(MODAL).locator(FIELDS[key]).fill(value)
 
-    # The checkout is a step-by-step accordion: only the open step's
-    # "Continue" button is visible, so the first visible match is the right one.
-    def click_continue(self):
-        self.page.get_by_role("button", name="Continue").first.click()
+    def fill_valid_details(self):
+        self.fill(**VALID_DETAILS)
+
+    def modal_total(self):
+        return money(self.page.locator(MODAL_TOTAL).inner_text())
+
+    def submit(self):
+        self.page.locator(MODAL).get_by_role("button", name="Purchase").click()
+
+    # ---- confirmation (a SweetAlert box, not a native alert) ----------------
+    def confirmation_shown(self):
+        try:
+            self.page.locator(CONFIRM_BOX, has_text="Thank you for your purchase").wait_for(
+                state="visible", timeout=10000
+            )
+            return True
+        except PWTimeout:
+            return False
+
+    def confirmation_text(self):
+        return self.page.locator(CONFIRM_BOX).inner_text()
+
+    def confirmation_amount(self):
+        m = re.search(r"Amount:\s*([\d,]+(?:\.\d+)?)", self.confirmation_text())
+        assert m, f"No 'Amount:' line in confirmation: {self.confirmation_text()!r}"
+        return Decimal(m.group(1).replace(",", ""))
+
+    def confirm_ok(self):
+        self.page.locator(CONFIRM_BOX).get_by_role("button", name="OK").click()
         self.page.wait_for_load_state("networkidle")
-
-    def choose_guest(self):
-        self.page.get_by_label("Guest Checkout").check()
-        self.click_continue()
-
-    def fill_billing_details(self):
-        email = f"qa.tester+{int(time.time())}@example.com"
-        for label, value in GUEST.items():
-            self.page.get_by_label(label).fill(value)
-        self.page.get_by_label("E-Mail").fill(email)
-        self.page.get_by_label("Country").select_option(label="Australia")
-        region = self.page.get_by_label("Region")
-        region.locator("option").nth(1).wait_for(state="attached", timeout=10000)
-        region.select_option(index=1)
-        self.click_continue()
-
-    def accept_terms_and_continue(self):
-        # shipping method step, then payment method step with the terms box
-        self.click_continue()
-        self.page.get_by_role("checkbox", name=re.compile("terms", re.I)).check()
-        self.click_continue()
-
-    def confirm_order(self):
-        self.page.get_by_role("button", name=re.compile("Confirm Order", re.I)).click()
-
-    # ---- reading state ------------------------------------------------------
-    def current_url(self):
-        return self.page.url
-
-    def validation_errors_visible(self):
-        err = self.page.locator(VALIDATION_ERRORS).first
-        err.wait_for(state="visible", timeout=5000)
-        return err.is_visible()
-
-    def order_placed(self):
-        msg = self.page.get_by_text("Your order has been placed", exact=False).first
-        msg.wait_for(state="visible", timeout=20000)
-        return msg.is_visible()

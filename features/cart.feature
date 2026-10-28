@@ -1,59 +1,64 @@
 @cart
 Feature: Shopping cart
   As a shopper I want to manage the items in my cart
-  so that I only pay for what I actually want
+  so that I only pay for what I want
+
+  Background:
+    Given I am on the store home page
 
   Scenario: A new visitor has an empty cart
-    Given I have an empty cart
     When I open the cart page
-    Then I should see the empty cart message
+    Then the cart should be empty
 
   @smoke
-  Scenario: Add a single product to the cart
-    Given I have an empty cart
-    When I add "iPhone" to the cart
+  Scenario: Add a product to the cart
+    When I add "Samsung galaxy s6" to the cart
     And I open the cart page
-    Then the cart should contain "iPhone" with quantity 1
+    Then the cart should contain "Samsung galaxy s6"
+    And the number of cart lines should be 1
+    And the cart total should equal the sum of the item prices
 
-  Scenario Outline: Line total reflects the quantity
-    Given I have an empty cart
-    When I add "iPhone" to the cart with quantity <qty>
+  Scenario Outline: The cart price matches the product page price
+    When I add "<product>" to the cart
     And I open the cart page
-    Then the cart should contain "iPhone" with quantity <qty>
-    And the line total for "iPhone" should be <qty> times the unit price
+    Then the cart price for "<product>" should match its product page price
 
     Examples:
-      | qty |
-      | 1   |
-      | 2   |
-      | 5   |
+      | product           |
+      | Samsung galaxy s6 |
+      | Nokia lumia 1520  |
+      | Sony vaio i5      |
 
-  Scenario: Update the quantity of a product in the cart
-    Given I have an empty cart
-    When I add "iPhone" to the cart
+  Scenario: Add two different products
+    When I add "Samsung galaxy s6" to the cart
+    And I add "Nexus 6" to the cart
     And I open the cart page
-    And I update the quantity of "iPhone" to 3
-    Then the cart should contain "iPhone" with quantity 3
-    And the line total for "iPhone" should be 3 times the unit price
+    Then the number of cart lines should be 2
+    And the cart total should equal the sum of the item prices
 
-  Scenario: Remove the only product from the cart
-    Given I have an empty cart
-    When I add "iPhone" to the cart
+  Scenario: Adding the same product twice creates two lines
+    When I add "Nexus 6" to the cart 2 times
     And I open the cart page
-    And I remove "iPhone" from the cart
-    Then I should see the empty cart message
+    Then the number of cart lines should be 2
+    And the cart total should be twice the price of "Nexus 6"
 
-  Scenario: Cart sub-total adds up across different products
-    Given I have an empty cart
-    When I add "iPhone" to the cart
-    And I add "Canon EOS 5D" to the cart with quantity 2
+  Scenario: Remove one of two products
+    When I add "Samsung galaxy s6" to the cart
+    And I add "Nexus 6" to the cart
     And I open the cart page
-    Then the cart should contain 2 line items
-    And the cart sub-total should equal the sum of the line totals
+    And I delete "Nexus 6" from the cart
+    Then the cart should contain "Samsung galaxy s6"
+    And the cart should not contain "Nexus 6"
+    And the cart total should equal the sum of the item prices
+
+  Scenario: Remove the only product
+    When I add "Nokia lumia 1520" to the cart
+    And I open the cart page
+    And I delete "Nokia lumia 1520" from the cart
+    Then the cart should be empty
 
   Scenario: Cart contents survive a page reload
-    Given I have an empty cart
-    When I add "Nikon D300" to the cart
+    When I add "Sony vaio i5" to the cart
     And I open the cart page
     And I reload the cart page
-    Then the cart should contain "Nikon D300" with quantity 1
+    Then the cart should contain "Sony vaio i5"
