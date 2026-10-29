@@ -16,9 +16,22 @@ class CartPage:
         self.page = page
         self.base_url = base_url
 
-    def _settle(self):
-        self.page.wait_for_load_state("load")
-        self.page.wait_for_load_state("networkidle")
+    def _settle(self, quiet_ms=1000, timeout_ms=10000):
+        """Wait until the cart rows stop changing.
+
+        Not 'networkidle': Demoblaze's ads and analytics keep the network busy
+        forever, so that wait never finishes on the real site.
+        """
+        self.page.wait_for_load_state("domcontentloaded")
+        last, stable, waited = -1, 0, 0
+        while waited < timeout_ms:
+            now = self.page.locator(ROWS).count()
+            stable = stable + 200 if now == last else 0
+            if stable >= quiet_ms:
+                return
+            last = now
+            self.page.wait_for_timeout(200)
+            waited += 200
 
     def open(self):
         # Use the nav link, as a shopper would, so the site's cart cookie is in place

@@ -69,4 +69,5 @@ class CheckoutPage:
 
     def confirm_ok(self):
         self.page.locator(CONFIRM_BOX).get_by_role("button", name="OK").click()
-        self.page.wait_for_load_state("networkidle")
+        self.page.locator(CONFIRM_BOX).wait_for(state="hidden")
+        self.page.wait_for_load_state("domcontentloaded")
