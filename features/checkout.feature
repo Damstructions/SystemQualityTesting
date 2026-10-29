@@ -42,6 +42,7 @@ Feature: Checkout
     When I click Place Order
     And I fill in valid details on the order form
     And I submit the order form
+    And I wait a bit
     And I accept the purchase confirmation
     And I open the cart page
     Then the cart should be empty

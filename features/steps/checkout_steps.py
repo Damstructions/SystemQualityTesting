@@ -48,3 +48,11 @@ def step_confirmation(context):
 def step_amount(context):
     actual = context.checkout.confirmation_amount()
     assert actual == context.cart_total, f"Cart total {context.cart_total}, confirmation says {actual}"
+
+@when("I press close")
+def step_press_close(context):
+    context.checkout.close_order_form()
+
+@when("I wait a bit")
+def step_wait(context):
+    context.page.wait_for_timeout(2000)

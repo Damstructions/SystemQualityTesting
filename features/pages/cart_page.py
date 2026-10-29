@@ -5,7 +5,7 @@ from pages.util import money
 
 # ---- Selectors ----------------------------------------------------------------
 NAV_CART = "#cartur"
-ROWS = "#tbodyid tr.success"
+ROWS = "#tbodyid tr"            # every row in the cart table body is a product
 TOTAL = "#totalp"
 PLACE_ORDER = "button"          # matched by its visible text below
 # -------------------------------------------------------------------------------
@@ -34,6 +34,8 @@ class CartPage:
             waited += 200
 
     def open(self):
+        # An open order form covers the nav bar. Fail clearly if one is left open.
+        self.page.locator("#orderModal").wait_for(state="hidden")
         # Use the nav link, as a shopper would, so the site's cart cookie is in place
         self.page.locator(NAV_CART).click()
         self.page.wait_for_url(re.compile(r"cart\.html"))

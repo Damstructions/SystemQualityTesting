@@ -68,6 +68,13 @@ class CheckoutPage:
         return Decimal(m.group(1).replace(",", ""))
 
     def confirm_ok(self):
-        self.page.locator(CONFIRM_BOX).get_by_role("button", name="OK").click()
-        self.page.locator(CONFIRM_BOX).wait_for(state="hidden")
-        self.page.wait_for_load_state("domcontentloaded")
+        ok = self.page.locator(CONFIRM_BOX).get_by_role("button", name="OK")
+        # After OK the site sends you back to the home page. Wait for that
+        # navigation, as a person would, before the next step starts.
+
+        # If the computer clicks the OK button too fast, the page won't reload and this test will error.
+        # OR, the computer interrupts the refresh by clicking on a web element before the page reloads, and the test will error.
+        # The workaround for this test? checkout_steps has a step_wait() function that waits for 2 seconds before clicking the OK button. This replicates human behavior
+        with self.page.expect_navigation(wait_until="domcontentloaded", timeout=15000):
+            ok.click()
+        self.page.locator("#tbodyid .card").first.wait_for(state="visible")
