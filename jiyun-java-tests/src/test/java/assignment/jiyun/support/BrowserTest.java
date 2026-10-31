@@ -1,7 +1,7 @@
 package assignment.jiyun.support;
 
 import assignment.jiyun.pages.AccountPage;
-import assignment.jiyun.pages.CatalogPage;
+import assignment.jiyun.pages.HomePage;
 import com.microsoft.playwright.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,7 +30,7 @@ public abstract class BrowserTest {
                     DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")) + "-" + UUID.randomUUID().toString().substring(0, 8));
     protected Page page;
     protected AccountPage account;
-    protected CatalogPage catalog;
+    protected HomePage home;
     private Playwright playwright;
     private Browser browser;
     private BrowserContext context;
@@ -56,10 +56,10 @@ public abstract class BrowserTest {
         evidence = Path.of("target", "evidence", RUN_ID,
                 getClass().getSimpleName() + "-" + info.getTestMethod().orElseThrow().getName());
         Files.createDirectories(evidence);
-        String baseUrl = System.getProperty("base.url", "https://opencart.abstracta.us/");
+        String baseUrl = System.getProperty("base.url", "https://www.demoblaze.com/");
         // Site-specific selectors and fixtures: do not accidentally create accounts elsewhere.
-        if (!baseUrl.matches("https://opencart\\.abstracta\\.us/?")) {
-            throw new IllegalArgumentException("These tests target https://opencart.abstracta.us/ only");
+        if (!baseUrl.matches("https://www\\.demoblaze\\.com/?")) {
+            throw new IllegalArgumentException("These tests target https://www.demoblaze.com/ only");
         }
         baseUrl = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
         details.setProperty("scenario", info.getDisplayName());
@@ -82,12 +82,13 @@ public abstract class BrowserTest {
         page = context.newPage();
         page.setDefaultTimeout(15000);
         page.setDefaultNavigationTimeout(45000);
-        account = new AccountPage(page, baseUrl);
-        catalog = new CatalogPage(page, baseUrl);
+        account = new AccountPage(page);
+        home = new HomePage(page, baseUrl);
+        home.open();
     }
 
-    protected String uniqueEmail() {
-        return "qa.jiyun." + UUID.randomUUID().toString().replace("-", "") + "@example.com";
+    protected String uniqueUsername() {
+        return "qa_jiyun_" + UUID.randomUUID().toString().replace("-", "");
     }
 
     /** Capture important intermediate outcomes before navigating away from them. */

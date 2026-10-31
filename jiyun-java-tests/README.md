@@ -1,12 +1,12 @@
 # Jiyun Java tests
 
-Java + Playwright + JUnit tests for [OpenCart Abstracta](https://opencart.abstracta.us/).
+Java + Playwright + JUnit tests for [Demoblaze](https://www.demoblaze.com/).
 
-- Registration: valid details, mismatched passwords and duplicate email.
-- Product comparison: add one product, compare two products and remove one.
-- Wish list: add a product, remove a product and require login for anonymous access.
+- Logout: restore guest state, stay logged out after reload, and stay logged out in a new tab.
+- Contact form: an English message, a multiline English message, and cancelling a draft. Checks the demo's confirmation and form behaviour, not actual email delivery.
+- Homepage carousel: next/previous navigation with wraparound, and selecting banners by indicator.
 
-Each test case contains three scenarios (nine scenarios in total).
+Each test case contains three scenarios (nine scenarios in total). Signup/login only prepare independent accounts for logout tests. Automatic carousel rotation is paused to check manual controls reliably.
 
 ## Run
 
@@ -19,4 +19,4 @@ mvn exec:java -Dexec.mainClass=com.microsoft.playwright.CLI -Dexec.classpathScop
 mvn test
 ```
 
-The Chromium installation command is only needed on first setup. Use `mvn -Dheaded=true test` to run with a visible browser.
+The Chromium installation command is only needed on first setup. Use `mvn -Dheaded=true test` for a visible browser, or `mvn -Dbrowser.channel=chrome test` for installed Chrome. Reports and screenshots are generated under the ignored `target/` directory.
