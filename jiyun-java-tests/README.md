@@ -8,6 +8,8 @@ Java + Playwright + JUnit tests for [Demoblaze](https://www.demoblaze.com/).
 
 Each test case contains three scenarios (nine scenarios in total). Signup/login only prepare independent accounts for logout tests. Automatic carousel rotation is paused to check manual controls reliably.
 
+The three test files are in `src/tests/`; shared browser and page helpers are in `src/support/`.
+
 ## Run
 
 Requires JDK 17+ and Maven 3.9+. From the repository root:

@@ -1,7 +1,5 @@
-package assignment.jiyun.support;
+package support;
 
-import assignment.jiyun.pages.AccountPage;
-import assignment.jiyun.pages.HomePage;
 import com.microsoft.playwright.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

@@ -1,4 +1,4 @@
-package assignment.jiyun.pages;
+package support;
 
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;

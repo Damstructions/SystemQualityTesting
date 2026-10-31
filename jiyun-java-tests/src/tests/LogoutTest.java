@@ -1,12 +1,10 @@
-package assignment.jiyun.tests;
-
-import assignment.jiyun.pages.AccountPage;
-import assignment.jiyun.support.BrowserTest;
+package tests;
+import support.AccountPage;
+import support.BrowserTest;
 import com.microsoft.playwright.Page;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
 @Tag("logout")
 @DisplayName("TC-JT-LOGOUT User logout")
 class LogoutTest extends BrowserTest {
@@ -18,7 +16,6 @@ class LogoutTest extends BrowserTest {
         checkpoint("signed-in");
         account.logout();
     }
-
     @Test
     @DisplayName("LOGOUT-02 Reloading after logout does not restore the session")
     void logoutSurvivesReload() {
@@ -27,7 +24,6 @@ class LogoutTest extends BrowserTest {
         page.reload();
         AccountPage.assertSignedOut(page);
     }
-
     @Test
     @DisplayName("LOGOUT-03 A new tab in the same browser remains signed out after logout")
     void logoutAppliesToNewTab() {

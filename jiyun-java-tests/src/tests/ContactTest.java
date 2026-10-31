@@ -1,6 +1,6 @@
-package assignment.jiyun.tests;
+package tests;
 
-import assignment.jiyun.support.BrowserTest;
+import support.BrowserTest;
 import com.microsoft.playwright.Dialog;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.options.AriaRole;
