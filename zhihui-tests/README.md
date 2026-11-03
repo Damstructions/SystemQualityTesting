@@ -25,4 +25,4 @@ pytest
 
 On Windows, activate the virtual environment with `.venv\Scripts\activate`.
 
-Screenshots from each scenario are written to `evidence/`.
+Screenshots from each scenario are written to `screenshots/`.
