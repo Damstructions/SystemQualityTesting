@@ -1,10 +1,8 @@
-# Zhihui Yuan — additional DemoBlaze tests
+# Zhihui Yuan —  DemoBlaze tests
 
 Python + Playwright + pytest tests for [DemoBlaze](https://www.demoblaze.com/).
 
-This folder is new. Existing group folders and `zhihui-python-tests/` were not changed.
-
-These cases cover functions that are not already written as T001–T010 in the group report: DemoBlaze log out, sign-up validation, and catalogue Next/Previous paging. They do not repeat category browsing, add to cart, checkout submit, contact, carousel, About us, product-detail, store-logo navigation, or Place Order cancel.
+These cases cover functions DemoBlaze log out, sign-up validation, and catalogue Next/Previous paging. They do not repeat category browsing, add to cart, checkout submit, contact, carousel, About us, product-detail, store-logo navigation, or Place Order cancel.
 
 | Test case ID | Function | Three scenarios |
 |---|---|---|
