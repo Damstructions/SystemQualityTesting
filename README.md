@@ -13,6 +13,7 @@ behave features/search.feature  # one feature
 behave --tags=@smoke            # by tag
 behave -f pretty --junit        # JUnit XML for CI
 
-Psychosis is real
+To fulfill complex techniques please check each folder respectively. Read README
 
-ME SAY ALONE RAMP
+Psychosis is not solid strue
+DONT GIVE UP HOLDING A RAMP
